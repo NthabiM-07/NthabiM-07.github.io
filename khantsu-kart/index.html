@@ -908,19 +908,20 @@ let msgs=[],chatReady=false,peerTyping=false,peerOnline=false,peerInfo='';
 const QUICK={p2:["Can't wait!",'What should I wear?','Running 5 min late','Missing you'],p1:["Can't wait!",'Leaving now','Outside!','You look amazing']};
 function renderQuick(){$('#quick').innerHTML=`<button class="qb" type="button" data-h="1">${svgMap(IC.heart).replace('currentColor','#ff5fa2')}Send a heart</button>`+QUICK[role].map(q=>`<button class="qb" type="button">${esc(q)}</button>`).join('')}
 const waOpen=t=>{try{window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank','noopener')}catch(_){}};
-$('#quick').addEventListener('click',e=>{const b=e.target.closest('.qb');if(!b)return;if(STATIC&&!chatUsable()){if(b.dataset.h){heartBurst();waOpen('Sending you a heart from Khantsu Kart \u2764\ufe0f')}else waOpen(b.textContent);return}if(b.dataset.h){sendMsg('','heart');heartBurst();try{room&&room.emit('heart',{r:role}).catch(()=>{})}catch(_){}}else{const t=b.textContent;if(chatUsable())sendMsg(t);else{$('#msg').value=t;updWa()}}});
+$('#quick').addEventListener('click',e=>{const b=e.target.closest('.qb');if(!b)return;if(STATIC&&!chatUsable()){if(b.dataset.h){heartBurst();localLog('','heart');waOpen('Sending you a heart from Khantsu Kart \u2764\ufe0f')}else{localLog(b.textContent);waOpen(b.textContent)}return}if(b.dataset.h){sendMsg('','heart');heartBurst();try{room&&room.emit('heart',{r:role}).catch(()=>{})}catch(_){}}else{const t=b.textContent;if(chatUsable())sendMsg(t);else{$('#msg').value=t;updWa()}}});
 const tfmt=t=>{try{return new Date(t).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',hour12:false})}catch(e){return ''}};
 function renderChat(){
  const box=$('#msgs');const near=box.scrollHeight-box.scrollTop-box.clientHeight<80;
- if(!msgs.length){box.innerHTML=`<p class="empty" id="empty">${chatReady?(role==='p2'?'Nothing here yet. Say hi to Nthabiseng.':'Nothing here yet. Messages land the moment you both have data.'):(db||!capsDone)?'Loading messages…':STATIC?'Type below and tap WhatsApp. It opens with your message ready to send to Nthabiseng.':'Chat lights up when you are both signed in to Claude on this page.'}</p>`;return}
+ if(!msgs.length){box.innerHTML=`<p class="empty" id="empty">${chatReady?(role==='p2'?'Nothing here yet. Say hi to Nthabiseng.':'Nothing here yet. Messages land the moment you both have data.'):(db||!capsDone)?'Loading messages…':STATIC?'Type below and tap WhatsApp. It lands on Nthabiseng\'s WhatsApp, and stays here too.':'Chat lights up when you are both signed in to Claude on this page.'}</p>`;return}
  box.innerHTML=msgs.map(m=>{const who=m.who==='p1'?'p1':'p2',me=who===role,t=tfmt(m.t);
   if(m.kind==='sys')return `<div class="sys">${esc(m.text)}</div>`;
   const av=`<img class="av" src="${AVURL[who]}" alt="${who==='p1'?'Nthabiseng':'Khantsu'}">`;
   if(m.kind==='heart')return `<div class="m${me?' me':''}">${av}<div class="hb"><img src="${HEARTURL}" alt="A heart">${esc(t)}</div></div>`;
-  return `<div class="m${me?' me':''}">${av}<div class="b">${esc(m.text)}<time>${esc(t)}</time></div></div>`}).join('');
+  return `<div class="m${me?' me':''}">${av}<div class="b">${esc(m.text)}<time>${esc(t)}${m.wa?' · sent on WhatsApp':''}</time></div></div>`}).join('');
  if(near||!renderChat.did){scrollChat();renderChat.did=true}
  updBadge();
 }
+function localLog(text,kind='msg'){const m={t:Date.now(),who:role,kind,text:String(text).slice(0,500),wa:1};msgs=msgs.concat(m).slice(-300);LS.set('kk-local-chat',msgs);chatReady=true;renderChat();scrollChat()}
 function scrollChat(){const b=$('#msgs');b.scrollTop=b.scrollHeight}
 function updBadge(){const seen=LS.get('kk-seen-'+role,0),n=msgs.filter(m=>m.who!==role&&m.kind!=='sys'&&m.t>seen).length,b=$('#badge');if(tab==='chat'){markRead();b.hidden=true;return}b.hidden=!n;b.textContent=n>9?'9+':n}
 function markRead(){const last=msgs.length?msgs[msgs.length-1].t:0;if(last)LS.set('kk-seen-'+role,last);$('#badge').hidden=true}
@@ -940,7 +941,8 @@ function chatMode(){
  if(STATIC){n.hidden=true;$('#chead').textContent='Pit radio · messages go out on WhatsApp';return}
  n.textContent=db?`You can read messages here, but this link doesn't let you send yet. Use WhatsApp for now, or ask ${other()} to invite you as an editor.`:`Live chat needs you both signed in to Claude on this page. Until then, WhatsApp works.`;
 }
-$('#compose').addEventListener('submit',e=>{e.preventDefault();const i=$('#msg'),t=i.value.trim();if(!t)return;if(!chatUsable()){updWa();window.open($('#waB').href,'_blank','noopener');return}i.value='';sendMsg(t);typingOff()});
+$('#waB').addEventListener('click',()=>{const t=$('#msg').value.trim();if(STATIC&&t)localLog(t);setTimeout(()=>{$('#msg').value='';updWa()},400)});
+$('#compose').addEventListener('submit',e=>{e.preventDefault();const i=$('#msg'),t=i.value.trim();if(!t)return;if(!chatUsable()){updWa();if(STATIC)localLog(t);window.open($('#waB').href,'_blank','noopener');i.value='';return}i.value='';sendMsg(t);typingOff()});
 let typT=null,typing=false;
 $('#msg').addEventListener('input',()=>{updWa();if(!typing){typing=true;presence()}clearTimeout(typT);typT=setTimeout(typingOff,2500)});
 function typingOff(){if(typing){typing=false;presence()}}
@@ -983,7 +985,7 @@ function renderRole(){
 
 /* ---------- capabilities ---------- */
 async function initCaps(){
- const C=window.claude;if(!C||typeof C.use!=='function'){capsDone=true;chatMode();renderChat();return}
+ const C=window.claude;if(!C||typeof C.use!=='function'){capsDone=true;const lm=LS.get('kk-local-chat',[]);msgs=Array.isArray(lm)?lm.filter(m=>m&&typeof m.t==='number'):[];chatReady=true;chatMode();renderChat();return}
  const [u0,d0,r0]=await Promise.all(['user','db','room'].map(n=>Promise.resolve().then(()=>C.use(n)).catch(()=>null)));user=u0;db=d0;
  if(user){try{isOwner=!!(await user.isOwner())}catch(e){}try{uid=await user.id()}catch(e){}try{const cw=await user.can('data.write');if(cw===false)readOnly=true}catch(e){}}
  role=isOwner?'p1':'p2';capsDone=true;
