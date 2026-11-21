@@ -261,7 +261,7 @@ svg{display:block}
             <span class="sp"></span>
             <button class="hbtn" id="hootB" aria-label="Hoot"></button>
             <button class="hbtn" id="muteB" aria-label="Sound on or off"></button>
-            <button class="hbtn" id="quitB" aria-label="Quit race">Quit</button>
+            <button class="hbtn" id="pauseB" aria-label="Pause"></button>
           </div>
           <div class="word" id="hWord"></div>
         </div>
@@ -269,7 +269,7 @@ svg{display:block}
         <div class="toast" id="toast"></div>
         <div class="crazy" id="crazy" aria-live="assertive">That's f#cking crazyyyy broooskkieeee</div>
         <div class="over" id="countO"><div class="count" id="countT">3</div></div>
-        <div class="over dimbg" id="pauseO"><div class="card"><h2>Paused</h2><p>Tap anywhere to keep racing.</p></div></div>
+        <div class="over dimbg" id="pauseO"><div class="card"><h2>Paused</h2><p id="pInfo">Take a breather, baby.</p><button class="btn pink" id="pResume" type="button">Resume</button><div class="row"><button class="btn ghost" id="pRestart" type="button">Restart</button><button class="btn ghost" id="pQuit" type="button">Quit to cups</button></div></div></div>
         <div class="over dimbg" id="resO">
           <div class="card">
             <h2>Finish!</h2>
@@ -374,11 +374,12 @@ const IC={
  right:['#......','##.....','###....','####...','#####..','####...','###....','##.....','#......'],
  snd:['....#....','...##..#.','#####.#..','#####..#.','#####.#..','#####..#.','...##.#..','....#....','.........'],
  mute:['....#....','...##....','#####.#.#','#####..#.','#####.#.#','#####....','...##....','....#....','.........'],
+ pause:['.........','.##...##.','.##...##.','.##...##.','.##...##.','.##...##.','.##...##.','.##...##.','.........'],
  horn:['.........','......##.','##..####.','#########','#########','##..####.','......##.','.........','.........'],
  lock:['..####..','.#....#.','.#....#.','########','########','###..###','###..###','########','########']
 };
 document.querySelectorAll('[data-i]').forEach(el=>el.innerHTML=svgMap(IC[el.dataset.i]));
-$('#padL').innerHTML=svgMap(IC.left);$('#carPrev').innerHTML=svgMap(IC.left);$('#carNext').innerHTML=svgMap(IC.right);$('#hootB').innerHTML=svgMap(IC.horn);$('#padR').innerHTML=svgMap(IC.right);
+$('#padL').innerHTML=svgMap(IC.left);$('#carPrev').innerHTML=svgMap(IC.left);$('#carNext').innerHTML=svgMap(IC.right);$('#hootB').innerHTML=svgMap(IC.horn);$('#pauseB').innerHTML=svgMap(IC.pause);$('#padR').innerHTML=svgMap(IC.right);
 $('#hHeartIc').innerHTML=svgMap(IC.heart).replace('currentColor','#ff5fa2');
 
 const HEART=fromMap(['.kkk.kkk.','kpwlkpppk','kpwppppPk','kpppppPPk','.kpppPPk.','..kpPPk..','...kPk...','....k....']);
@@ -642,9 +643,10 @@ function collect(it){
  if(it.t==='coin'){hearts++;SFX.coin();burstP('#ff5fa2',4);$('#hHearts').textContent=hearts}
  else if(it.t==='box'){boostT=2.2*(CAR.boost||1);SFX.boost();toast('Samp & stew! Boost',1000);burstP('#ffcf3f',8)}
  else if(it.t==='braai'){hearts+=5;$('#hHearts').textContent=hearts;SFX.letter();toast('Braai plate! +5 hearts',1000);burstP('#ff8a2a',8)}
- else if(it.t==='letter'){if(it.ch===CUP.word[idx]){idx++;pendingLetter=null;nextLetterAt=Math.floor((dist+PZ)/SEGL)+CUP.gap;SFX.letter();burstP('#ffcf3f',10);hud();if(idx<CUP.word.length)toast(['Lekker!','Sharp!','Yebo!','Shap shap!'][Math.random()*4|0],700);
+ else if(it.t==='letter'){if(it.ch===CUP.word[idx]){idx++;pendingLetter=null;nextLetterAt=Math.floor((dist+PZ)/SEGL)+CUP.gap;SFX.letter();burstP('#ffcf3f',10);hud();if(idx<CUP.word.length)toast(HYPE[Math.random()*HYPE.length|0],800);
    if(idx>=CUP.word.length){finishAbs=Math.floor((dist+PZ)/SEGL)+95;toast(`${CUP.word}! Finish line ahead, sharp sharp`,1800)}}}
 }
+const HYPE=['Stele ngwanaka!','Daai ding!','Wena naa!','Stele ngwanaka!','Daai ding!','Wena naa!','Sharp!','Shap shap!'];
 function burstP(c,n){for(let i=0;i<n;i++)parts.push({x:W/2+(Math.random()-.5)*20,y:H-24,vx:(Math.random()-.5)*80,vy:-30-Math.random()*60,l:.6,c,s:2,g:1})}
 function update(dt){
  T+=dt;frame++;
@@ -752,16 +754,20 @@ const held=new Map();let keyL=false,keyR=false;
 function updSteer(){let s=0;held.forEach(v=>s+=v);s+=(keyR?1:0)-(keyL?1:0);steer=clamp(s,-1,1);$('#padL').classList.toggle('hold',steer<0);$('#padR').classList.toggle('hold',steer>0)}
 function sideOf(e){const r=stage.getBoundingClientRect();return (e.clientX-r.left)<r.width/2?-1:1}
 stage.addEventListener('pointerdown',e=>{
- if(paused&&state==='race'){paused=false;$('#pauseO').classList.remove('on');musicStart();e.preventDefault();return}
+ if(paused)return;
  if(state!=='race'&&state!=='count')return;if(e.target.closest('button'))return;
  held.set(e.pointerId,sideOf(e));try{stage.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();updSteer()});
 stage.addEventListener('pointermove',e=>{if(held.has(e.pointerId)){held.set(e.pointerId,sideOf(e));updSteer()}});
 ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>stage.addEventListener(ev,e=>{held.delete(e.pointerId);updSteer()}));
 addEventListener('keydown',e=>{if(e.target.closest('input,textarea'))return;if(e.key==='ArrowLeft'||e.key==='a'){keyL=true;updSteer()}if(e.key==='ArrowRight'||e.key==='d'){keyR=true;updSteer()}});
 addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a'){keyL=false;updSteer()}if(e.key==='ArrowRight'||e.key==='d'){keyR=false;updSteer()}});
-function pause(){if(state==='race'&&!paused){paused=true;musicStop();held.clear();updSteer();$('#pauseO').classList.add('on')}}
+function pause(){if(state==='race'&&!paused){paused=true;musicStop();held.clear();updSteer();$('#pInfo').textContent=`${CUP.name} · ${idx} of ${CUP.word.length} letters · ${fmtT(raceT)}`;$('#pauseO').classList.add('on')}}
+function resume(){if(!paused)return;paused=false;$('#pauseO').classList.remove('on');musicStart()}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
-$('#quitB').addEventListener('click',quitRace);
+$('#pauseB').addEventListener('click',pause);$('#pResume').addEventListener('click',resume);
+$('#pRestart').addEventListener('click',()=>{paused=false;$('#pauseO').classList.remove('on');musicStop();startRace(CUP)});
+$('#pQuit').addEventListener('click',quitRace);
+addEventListener('keydown',e=>{if(e.target.closest('input,textarea'))return;if(e.key==='Escape'||e.key==='p'){if(paused)resume();else pause()}});
 
 /* ---------- audio ---------- */
 let ac=null,master=null,muted=LS.get('kk-mute',false),musT=null,mstep=0,nextT=0;
