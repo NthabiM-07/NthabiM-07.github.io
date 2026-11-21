@@ -207,6 +207,8 @@ svg{display:block}
 .tab.on{color:var(--ink);background:var(--panel2);box-shadow:inset 0 4px 0 var(--pink)}
 .tab.g{display:none}
 .owner .tab.g{display:flex}
+body.static .tab.g{display:none}
+body.static.owner .tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
 .badge{position:absolute;top:6px;left:calc(50% + 8px);min-width:22px;padding:4px 5px;background:var(--pink);color:#fff;font:400 13px/1 "Press Start 2P",monospace;box-shadow:0 0 0 2px var(--line)}
 .fh{position:absolute;width:36px;height:32px;image-rendering:pixelated;pointer-events:none;z-index:9;animation:fu 1.7s ease-out forwards}
 @keyframes fu{to{transform:translateY(-300px) scale(1.4);opacity:0}}
@@ -547,6 +549,10 @@ const fmtWhen=(o)=>{try{return whenDate().toLocaleString('en-ZA',Object.assign({
 
 /* ---------- state ---------- */
 const STATIC=!(window.claude&&typeof window.claude.use==='function');
+const FBCFG={apiKey:"AIzaSyDCEqu-559CmkBwos_sDC1uAD4MOn_btPk",authDomain:"khantsu-kart.firebaseapp.com",projectId:"khantsu-kart",storageBucket:"khantsu-kart.firebasestorage.app",messagingSenderId:"751849735167",appId:"1:751849735167:web:08388ea7fdfaa445c49dca"};
+{let q=null;try{q=new URLSearchParams(location.search)}catch(e){}if(q){const r=q.get('room'),f=q.get('for');if(r&&/^[a-z0-9]{20,64}$/.test(r))LS.set('kk-room',r);if(f==='nthabi'||f==='khantsu')LS.set('kk-for',f)}}
+const FB_ROOM=STATIC?LS.get('kk-room',null):null,FB_FOR=STATIC?LS.get('kk-for','khantsu'):null;
+let fsCol=null;
 let capsDone=false,role='p2',isOwner=false,db=null,room=null,user=null,uid=null,readOnly=false,tab='race';
 const other=()=>role==='p1'?'Khantsu':'Nthabiseng';
 const emptyProg=()=>({cleared:{},seen:{}});
@@ -840,7 +846,7 @@ function finishRace(){
  saveProg();if(first&&!isOwner)postSys(`Ms Pitso cleared the ${CUP.name} ${'★'.repeat(stars)}`);
  lastRes={cup:CUP,res,first};
  setTimeout(()=>{if(state!=='finish')return;$('#rStars').innerHTML=`<b>${'★'.repeat(stars)}</b>${'★'.repeat(3-stars)}`;$('#rTime').textContent=fmtT(res.time);$('#rHearts').textContent=hearts;$('#rHits').textContent=hits;
-  const r=REW[CUP.id-1];const nc=CARS.find(c=>c.need===CUP.id);$('#rUnl').textContent=(first?'Unlocked: ':'Already yours: ')+r.prize+(first&&nc&&!isOwner?` + a new ride, the ${nc.name}`:'');const tl=$('#rTell');tl.hidden=!(STATIC&&!isOwner);tl.href='https://wa.me/?text='+encodeURIComponent(`I just won the ${CUP.name} in Khantsu Kart ${'\u2605'.repeat(stars)}`);$('#resO').classList.add('on');renderCups();renderVault();renderRide()},900);
+  const r=REW[CUP.id-1];const nc=CARS.find(c=>c.need===CUP.id);$('#rUnl').textContent=(first?'Unlocked: ':'Already yours: ')+r.prize+(first&&nc&&!isOwner?` + a new ride, the ${nc.name}`:'');const tl=$('#rTell');tl.hidden=!(STATIC&&!isOwner&&!fsCol);tl.href='https://wa.me/?text='+encodeURIComponent(`I just won the ${CUP.name} in Khantsu Kart ${'\u2605'.repeat(stars)}`);$('#resO').classList.add('on');renderCups();renderVault();renderRide()},900);
 }
 $('#rOpen').addEventListener('click',()=>{const id=lastRes?lastRes.cup.id:1;quitRace();go('vault');setTimeout(()=>{const el=document.getElementById('rw'+id);if(el){el.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'});revealCard(id,true)}},60)});
 $('#rMenu').addEventListener('click',quitRace);
@@ -892,7 +898,7 @@ let io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){const id
 function watchVault(){io.disconnect();document.querySelectorAll('.rw').forEach(el=>io.observe(el))}
 
 /* ---------- tabs ---------- */
-function go(t){if(!['race','vault','chat','garage'].includes(t))t='race';if(t==='garage'&&!isOwner)t='race';if(tab==='race'&&t!=='race')pause();tab=t;
+function go(t){if(!['race','vault','chat','garage'].includes(t))t='race';if(t==='garage'&&(!isOwner||STATIC))t='race';if(tab==='race'&&t!=='race')pause();tab=t;
  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+t));document.querySelectorAll('.tab').forEach(b=>{b.classList.toggle('on',b.dataset.t===t);b.setAttribute('aria-current',b.dataset.t===t?'page':'false')});
  if(location.hash!=='#'+t)try{history.replaceState(null,'','#'+t)}catch(e){}
  if(t==='race')requestAnimationFrame(resize);
@@ -925,21 +931,21 @@ function localLog(text,kind='msg'){const m={t:Date.now(),who:role,kind,text:Stri
 function scrollChat(){const b=$('#msgs');b.scrollTop=b.scrollHeight}
 function updBadge(){const seen=LS.get('kk-seen-'+role,0),n=msgs.filter(m=>m.who!==role&&m.kind!=='sys'&&m.t>seen).length,b=$('#badge');if(tab==='chat'){markRead();b.hidden=true;return}b.hidden=!n;b.textContent=n>9?'9+':n}
 function markRead(){const last=msgs.length?msgs[msgs.length-1].t:0;if(last)LS.set('kk-seen-'+role,last);$('#badge').hidden=true}
-const chatUsable=()=>!!db&&!readOnly;
+const chatUsable=()=>!!(db||fsCol)&&!readOnly;
 async function sendMsg(text,kind='msg'){
  if(!chatUsable()){if(kind==='msg'){$('#msg').value=text;updWa()}return}
- const doc={t:Date.now(),who:role,kind,text:String(text).slice(0,500)};if(uid)doc.by=uid;
- try{await db.collection('chat').add(doc)}catch(e){if(e&&e.code==='invalid_argument'){readOnly=true;chatMode()}else{toastChat("That didn't send. Check your data and try again.");if(kind==='msg'&&!$('#msg').value)$('#msg').value=text}}
+ const doc={t:Date.now(),who:role,kind,text:String(text).slice(0,500)};if(uid&&!fsCol)doc.by=uid;
+ try{await (fsCol||db.collection('chat')).add(doc)}catch(e){if(e&&(e.code==='invalid_argument'||e.code==='permission-denied')){readOnly=true;chatMode()}else{toastChat("That didn't send. Check your data and try again.");if(kind==='msg'&&!$('#msg').value)$('#msg').value=text}}
 }
-async function postSys(text){if(!chatUsable())return;try{await db.collection('chat').add({t:Date.now(),who:role,kind:'sys',text})}catch(e){}}
+async function postSys(text){if(!chatUsable())return;try{await (fsCol||db.collection('chat')).add({t:Date.now(),who:role,kind:'sys',text:String(text).slice(0,500)})}catch(e){}}
 function toastChat(m){const n=$('#cnote');n.textContent=m;n.hidden=false;setTimeout(()=>chatMode(),4000)}
 function updWa(){$('#waB').href='https://wa.me/?text='+encodeURIComponent($('#msg').value||'')}
 function chatMode(){
  const n=$('#cnote');
  if(chatUsable()||!capsDone){n.hidden=true;$('#sendB').hidden=false;$('#waB').hidden=true;return}
  n.hidden=false;$('#sendB').hidden=true;$('#waB').hidden=false;updWa();
- if(STATIC){n.hidden=true;$('#chead').textContent='Pit radio · messages go out on WhatsApp';return}
- n.textContent=db?`You can read messages here, but this link doesn't let you send yet. Use WhatsApp for now, or ask ${other()} to invite you as an editor.`:`Live chat needs you both signed in to Claude on this page. Until then, WhatsApp works.`;
+ if(STATIC&&!fsCol){n.hidden=true;$('#chead').textContent='Pit radio · messages go out on WhatsApp';return}
+ n.textContent=fsCol?`Messages can't send right now. Use WhatsApp for now.`:db?`You can read messages here, but this link doesn't let you send yet. Use WhatsApp for now, or ask ${other()} to invite you as an editor.`:`Live chat needs you both signed in to Claude on this page. Until then, WhatsApp works.`;
 }
 $('#waB').addEventListener('click',()=>{const t=$('#msg').value.trim();if(STATIC&&t)localLog(t);setTimeout(()=>{$('#msg').value='';updWa()},400)});
 $('#compose').addEventListener('submit',e=>{e.preventDefault();const i=$('#msg'),t=i.value.trim();if(!t)return;if(!chatUsable()){updWa();if(STATIC)localLog(t);window.open($('#waB').href,'_blank','noopener');i.value='';return}i.value='';sendMsg(t);typingOff()});
@@ -953,7 +959,7 @@ function presence(){if(!room)return;try{room.presence({role,tab,cup:state==='rac
 function renderStatus(){
  const dot=$('#dot'),cd=$('#cdot'),s=$('#stxt');
  dot.classList.toggle('on',peerOnline);cd.classList.toggle('on',peerOnline);
- if(!room){s.textContent=STATIC?(role==='p2'?'Player 2 ready':'Live'):db?'Live chat on':'Solo mode';}
+ if(!room){s.textContent=chatUsable()?'Live chat on':STATIC?(role==='p2'?'Player 2 ready':'Player 1'):'Solo mode';}
  else s.textContent=peerOnline?`${other()} is here${peerInfo}`:`${other()} is away`;
  if(STATIC)return;$('#chead').textContent=peerOnline?`${other()} is here${peerInfo}. Messages land instantly.`:`Pit radio · messages land when you both have data`;
  $('#typing').textContent=peerTyping?`${other()} is typing…`:'';
@@ -985,7 +991,12 @@ function renderRole(){
 
 /* ---------- capabilities ---------- */
 async function initCaps(){
- const C=window.claude;if(!C||typeof C.use!=='function'){capsDone=true;const lm=LS.get('kk-local-chat',[]);msgs=Array.isArray(lm)?lm.filter(m=>m&&typeof m.t==='number'):[];chatReady=true;chatMode();renderChat();return}
+ const C=window.claude;if(!C||typeof C.use!=='function'){
+  document.body.classList.add('static');
+  if(FB_FOR==='nthabi'){isOwner=true;role='p1';prog=LS.get('kk-prog-p1',emptyProg());renderRole()}
+  capsDone=true;
+  if(FB_ROOM){chatReady=false;renderChat();initFirebase();return}
+  const lm=LS.get('kk-local-chat',[]);msgs=Array.isArray(lm)?lm.filter(m=>m&&typeof m.t==='number'):[];chatReady=true;chatMode();renderChat();return}
  const [u0,d0,r0]=await Promise.all(['user','db','room'].map(n=>Promise.resolve().then(()=>C.use(n)).catch(()=>null)));user=u0;db=d0;
  if(user){try{isOwner=!!(await user.isOwner())}catch(e){}try{uid=await user.id()}catch(e){}try{const cw=await user.can('data.write');if(cw===false)readOnly=true}catch(e){}}
  role=isOwner?'p1':'p2';capsDone=true;
@@ -1018,6 +1029,18 @@ function showSplash(){let seen=false;try{seen=sessionStorage.getItem('kk-splash'
  if(days>0)$('#spDay').textContent=`${days} days of us, and counting`;
  $('#splash').hidden=false;drawSplash();if(!RM)spT=setInterval(drawSplash,120)}
 $('#spGo').addEventListener('click',()=>{audio();SFX.letter();try{sessionStorage.setItem('kk-splash','1')}catch(e){}clearInterval(spT);$('#splash').hidden=true;heartBurst();requestAnimationFrame(()=>{measureSheet();applyView()})});
+
+/* ---------- firebase chat (GitHub version) ---------- */
+function loadJs(src){return new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=src;sc.async=false;sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}
+async function initFirebase(){
+ const v='10.14.1',base=`https://www.gstatic.com/firebasejs/${v}/`;
+ const fail=()=>{fsCol=null;const lm=LS.get('kk-local-chat',[]);msgs=Array.isArray(lm)?lm:[];chatReady=true;chatMode();renderChat();renderStatus()};
+ try{await loadJs(base+'firebase-app-compat.js');await loadJs(base+'firebase-firestore-compat.js')}catch(e){fail();return}
+ try{const app=firebase.apps.length?firebase.app():firebase.initializeApp(FBCFG);fsCol=app.firestore().collection('rooms').doc(FB_ROOM).collection('msgs')}catch(e){fail();return}
+ chatMode();renderStatus();
+ const tmr=setTimeout(()=>{if(!chatReady){const em=$('#empty');if(em)em.textContent="Can't reach the chat yet. It will load when your data connects."}},10000);
+ fsCol.orderBy('t','desc').limit(150).onSnapshot(s=>{const prevLast=msgs.length?msgs[msgs.length-1].t:0;msgs=s.docs.map(d=>Object.assign({id:d.id},d.data())).filter(m=>m&&typeof m.t==='number').reverse();if(prevLast&&msgs.some(m=>m.t>prevLast&&m.who!==role&&m.kind!=='sys'))SFX.pop();chatReady=true;clearTimeout(tmr);renderChat()},e=>{clearTimeout(tmr);chatReady=true;readOnly=true;chatMode();renderChat();renderStatus()});
+}
 
 /* ---------- loop + boot ---------- */
 let last=performance.now();
