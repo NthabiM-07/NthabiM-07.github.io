@@ -1036,7 +1036,7 @@ async function initFirebase(){
  const v='10.14.1',base=`https://www.gstatic.com/firebasejs/${v}/`;
  const fail=()=>{fsCol=null;const lm=LS.get('kk-local-chat',[]);msgs=Array.isArray(lm)?lm:[];chatReady=true;chatMode();renderChat();renderStatus()};
  try{await loadJs(base+'firebase-app-compat.js');await loadJs(base+'firebase-firestore-compat.js')}catch(e){fail();return}
- try{const app=firebase.apps.length?firebase.app():firebase.initializeApp(FBCFG);fsCol=app.firestore().collection('rooms').doc(FB_ROOM).collection('msgs')}catch(e){fail();return}
+ try{const app=firebase.apps.length?firebase.app():firebase.initializeApp(FBCFG);const fdb=app.firestore();try{fdb.settings({experimentalForceLongPolling:true,merge:true})}catch(_){}fsCol=fdb.collection('rooms').doc(FB_ROOM).collection('msgs')}catch(e){fail();return}
  chatMode();renderStatus();
  const tmr=setTimeout(()=>{if(!chatReady){const em=$('#empty');if(em)em.textContent="Can't reach the chat yet. It will load when your data connects."}},10000);
  fsCol.orderBy('t','desc').limit(150).onSnapshot(s=>{const prevLast=msgs.length?msgs[msgs.length-1].t:0;msgs=s.docs.map(d=>Object.assign({id:d.id},d.data())).filter(m=>m&&typeof m.t==='number').reverse();if(prevLast&&msgs.some(m=>m.t>prevLast&&m.who!==role&&m.kind!=='sys'))SFX.pop();chatReady=true;clearTimeout(tmr);renderChat()},e=>{clearTimeout(tmr);chatReady=true;readOnly=true;chatMode();renderChat();renderStatus()});
