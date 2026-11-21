@@ -117,7 +117,7 @@ svg{display:block}
 .dcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .dc{background:var(--panel2);padding:12px;box-shadow:0 0 0 3px var(--line);display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
 .dc img{width:64px;height:64px;image-rendering:pixelated}
-.dc b{font:400 13px/1.3 "Press Start 2P",monospace}
+.dc b{font-weight:700;font-size:19px;line-height:1.15}
 .bars{width:100%;display:flex;flex-direction:column;gap:5px;text-align:left;font-size:14px;line-height:1.2;color:var(--soft)}
 .bar{height:8px;background:#0a0616;box-shadow:0 0 0 2px var(--line)}
 .bar i{display:block;height:100%;background:var(--pink)}
@@ -216,7 +216,7 @@ svg{display:block}
             <div class="stats"><div><b id="rTime">0:00</b><span>time</span></div><div><b id="rHearts">0</b><span>hearts</span></div><div><b id="rHits">0</b><span>spin-outs</span></div></div>
             <p class="unl" id="rUnl">Reward unlocked</p>
             <div class="row"><button class="btn pink" id="rOpen">Open reward</button><button class="btn ghost" id="rMenu">Cups</button></div>
-            <a class="btn" id="rTell" href="https://wa.me/" target="_blank" rel="noopener" hidden>Tell Nirvana</a>
+            <a class="btn" id="rTell" href="https://wa.me/" target="_blank" rel="noopener" hidden>Tell Nthabiseng</a>
           </div>
         </div>
         <div class="sheet" id="sheet">
@@ -256,6 +256,7 @@ svg{display:block}
         <form class="box" id="gform">
           <h3>Date night details</h3>
           <div class="fld"><label for="gWhen">Date and time (SA time)</label><input id="gWhen" type="datetime-local"></div>
+          <div class="pair"><div class="fld"><label for="gD">Dress on ticket</label><input id="gD" maxlength="40"></div><div class="fld"><label for="gP">Place on ticket</label><input id="gP" maxlength="60"></div></div>
           <div class="pair"><div class="fld"><label for="g1t">Clue 1 title</label><input id="g1t" maxlength="40"></div><div class="fld"><label for="g1">Clue 1 (Golden Hour Cup)</label><input id="g1" maxlength="220"></div></div>
           <div class="pair"><div class="fld"><label for="g2t">Clue 2 title</label><input id="g2t" maxlength="40"></div><div class="fld"><label for="g2">Clue 2 (Mirror Cup)</label><input id="g2" maxlength="220"></div></div>
           <div class="pair"><div class="fld"><label for="g3t">Clue 3 title</label><input id="g3t" maxlength="40"></div><div class="fld"><label for="g3">Clue 3 (Stardust Cup)</label><input id="g3" maxlength="220"></div></div>
@@ -399,20 +400,20 @@ const CUPS=[
 const TROPH={};CUPS.forEach(c=>TROPH[c.id]=fromMap(TROPHY,{y:c.col}));
 
 /* ---------- defaults for the reveal (P1 edits these in the Garage) ---------- */
-const DEF={when:'2026-11-22T18:00',c:[
- {t:'Dress code',x:'Dress like the main character you are. Comfy shoes, there might be a little walking.'},
- {t:'Pick-up',x:'Be ready by 18:00. Your driver will hoot twice.'},
- {t:'Destination',x:'Somewhere with good food and better company. That is all you get for now.'}],
- letter:"Khantsu,\n\nYou raced four cups to get here, so here is the prize: you, me, and a whole night that is just ours.\n\nThank you for every golden-hour selfie, every mirror pic, and for making ordinary days feel like a win. Tomorrow I want to spoil you a little.\n\nSee you at the start line.",sign:'Nirvana, P1'};
+const DEF={when:'2026-11-22T18:00',place:'Texas Wings Bar · Montecasino',dress:'Black attire',c:[
+ {t:'Dress code',x:'Black attire. Pull out your best all-black look, Ms Pitso.'},
+ {t:'Pick-up',x:'Be ready by 18:00 tomorrow. Your driver will hoot twice.'},
+ {t:'Destination',x:'Texas Wings Bar at Montecasino. Wings, good vibes and you.'}],
+ letter:"Lesutsa laka,\n\nYou raced four cups to get here, so here is the prize: you, me, and a whole night that is just ours.\n\nThank you for every golden-hour selfie, every mirror pic, and for making ordinary days feel like a win. Tomorrow we are all in black at Texas Wings Bar, and I get to spoil you a little.\n\nKea go rata baby.\n\nSee you at the start line.",sign:'Nthabiseng, P1'};
 let cfg=JSON.parse(JSON.stringify(DEF));
-function normCfg(d){const o=JSON.parse(JSON.stringify(DEF));if(!d||typeof d!=='object')return o;if(typeof d.when==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(d.when))o.when=d.when;if(Array.isArray(d.c))d.c.slice(0,3).forEach((c,i)=>{if(c&&typeof c.t==='string')o.c[i].t=c.t.slice(0,40);if(c&&typeof c.x==='string')o.c[i].x=c.x.slice(0,220)});if(typeof d.letter==='string')o.letter=d.letter.slice(0,1500);if(typeof d.sign==='string')o.sign=d.sign.slice(0,60);return o}
+function normCfg(d){const o=JSON.parse(JSON.stringify(DEF));if(!d||typeof d!=='object')return o;if(typeof d.when==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(d.when))o.when=d.when;if(Array.isArray(d.c))d.c.slice(0,3).forEach((c,i)=>{if(c&&typeof c.t==='string')o.c[i].t=c.t.slice(0,40);if(c&&typeof c.x==='string')o.c[i].x=c.x.slice(0,220)});if(typeof d.letter==='string')o.letter=d.letter.slice(0,1500);if(typeof d.place==='string'&&d.place.trim())o.place=d.place.slice(0,60);if(typeof d.dress==='string'&&d.dress.trim())o.dress=d.dress.slice(0,40);if(typeof d.sign==='string')o.sign=d.sign.slice(0,60);return o}
 const whenDate=()=>new Date(cfg.when+':00+02:00');
 const fmtWhen=(o)=>{try{return whenDate().toLocaleString('en-ZA',Object.assign({timeZone:'Africa/Johannesburg'},o))}catch(e){return cfg.when}};
 
 /* ---------- state ---------- */
 const STATIC=!(window.claude&&typeof window.claude.use==='function');
 let capsDone=false,role='p2',isOwner=false,db=null,room=null,user=null,uid=null,readOnly=false,tab='race';
-const other=()=>role==='p1'?'Khantsu':'Nirvana';
+const other=()=>role==='p1'?'Khantsu':'Nthabiseng';
 const emptyProg=()=>({cleared:{},seen:{}});
 let prog=LS.get('kk-prog-p2',emptyProg()),herProg=null;
 function mergeProg(a,b){const o={cleared:Object.assign({},a.cleared),seen:Object.assign({},a.seen,b&&b.seen||{})};if(b&&b.cleared)for(const k in b.cleared){const x=b.cleared[k],y=o.cleared[k];if(x&&typeof x.stars==='number'&&(!y||x.stars>y.stars))o.cleared[k]={stars:clamp(x.stars|0,1,3),time:+x.time||0,hearts:x.hearts|0}}return o}
@@ -663,8 +664,8 @@ function renderVault(){
  const n=REW.filter(r=>unlockedReward(r.id)).length;$('#vProg').textContent=isOwner?`Preview mode`:`${n} of 4 unlocked`;$('#vNote').hidden=!isOwner;
  $('#rws').innerHTML=REW.map(r=>{const ok=unlockedReward(r.id),cup=CUPS[r.id-1],lockTxt=`Win the ${esc(cup.name)} to open this.`;
   if(r.kind==='photo')return `<article class="rw${ok?'':' locked'}" id="rw${r.id}"><div class="ph"><canvas width="84" height="112" data-img="${r.img}"${ok?'':' data-lock="1"'}></canvas>${ok?'':`<div class="lk">${svgMap(IC.lock).replace('currentColor','#ffcf3f')}</div>`}</div><div class="rt"><span class="tag">${esc(cup.name)}</span><h3>${ok?esc(r.title):'Locked memory'}</h3><p>${ok?esc(r.cap):lockTxt}</p>${ok?`<div class="clue"><b>Clue ${r.id} · ${esc(cfg.c[r.id-1].t)}</b><span class="ct">${esc(cfg.c[r.id-1].x)}</span></div>`:''}</div></article>`;
-  if(r.kind==='drivers')return `<article class="rw${ok?'':' locked'}" id="rw3"><div class="drivers"><span class="tag">${esc(cup.name)}</span><h3 style="margin:0;font-size:21px">${ok?'Driver cards':'Locked cards'}</h3>${ok?`<div class="dcards"><div class="dc"><img src="${FURL.p2}" width="64" height="64" alt="Pixel Khantsu"><b>Ms Pitso</b>${bars([['Style',100],['Smile',100],['Shades game',96]])}</div><div class="dc"><img src="${FURL.p1}" width="64" height="64" alt="Pixel Nirvana"><b>Nirvana</b>${bars([['Bucket hats',100],['Grin',98],['Luck',100]])}</div></div><div class="clue"><b>Clue 3 · ${esc(cfg.c[2].t)}</b><span class="ct">${esc(cfg.c[2].x)}</span></div>`:`<p>${lockTxt}</p>`}</div></article>`;
-  return `<article class="rw${ok?'':' locked'}" id="rw4"><div class="final"><span class="tag">${esc(cup.name)}</span>${ok?`<div class="ticket"><div class="tmain"><small>Admit two</small><strong>Date night</strong><span>${esc(fmtWhen({weekday:'short',day:'numeric',month:'short'}))} · ${esc(fmtWhen({hour:'2-digit',minute:'2-digit',hour12:false}))}</span><span>Khantsu + Nirvana</span></div><div class="stub">P2 VIP</div></div><div class="cd"><span>Starts in</span><b id="cdT">soon</b></div><div class="letter"><span class="lt">${esc(cfg.letter)}</span><span class="sig">${esc(cfg.sign)}</span></div><button class="btn pink" id="replyB" type="button">Reply in chat</button>`:`<h3 style="margin:0;font-size:21px">Final prize</h3><p>${lockTxt}</p>`}</div></article>`;
+  if(r.kind==='drivers')return `<article class="rw${ok?'':' locked'}" id="rw3"><div class="drivers"><span class="tag">${esc(cup.name)}</span><h3 style="margin:0;font-size:21px">${ok?'Driver cards':'Locked cards'}</h3>${ok?`<div class="dcards"><div class="dc"><img src="${FURL.p2}" width="64" height="64" alt="Pixel Khantsu"><b>Ms Pitso</b>${bars([['Style',100],['Smile',100],['Shades game',96]])}</div><div class="dc"><img src="${FURL.p1}" width="64" height="64" alt="Pixel Nthabiseng"><b>Nthabiseng</b>${bars([['Bucket hats',100],['Grin',98],['Luck',100]])}</div></div><div class="clue"><b>Clue 3 · ${esc(cfg.c[2].t)}</b><span class="ct">${esc(cfg.c[2].x)}</span></div>`:`<p>${lockTxt}</p>`}</div></article>`;
+  return `<article class="rw${ok?'':' locked'}" id="rw4"><div class="final"><span class="tag">${esc(cup.name)}</span>${ok?`<div class="ticket"><div class="tmain"><small>Admit two</small><strong>Date night</strong><span>${esc(fmtWhen({weekday:'short',day:'numeric',month:'short'}))} · ${esc(fmtWhen({hour:'2-digit',minute:'2-digit',hour12:false}))}</span><span>${esc(cfg.place)}</span><span>Dress: ${esc(cfg.dress)}</span><span>Khantsu + Nthabiseng</span></div><div class="stub">P2 VIP</div></div><div class="cd"><span>Starts in</span><b id="cdT">soon</b></div><div class="letter"><span class="lt">${esc(cfg.letter)}</span><span class="sig">${esc(cfg.sign)}</span></div><button class="btn pink" id="replyB" type="button">Reply in chat</button>`:`<h3 style="margin:0;font-size:21px">Final prize</h3><p>${lockTxt}</p>`}</div></article>`;
  }).join('');
  $('#rws').querySelectorAll('canvas[data-img]').forEach(c=>drawPhoto(c,IMGS[c.dataset.img],!!c.dataset.lock));if(tab==='vault')watchVault();
  const rb=$('#replyB');if(rb)rb.addEventListener('click',()=>go('chat'));
@@ -704,10 +705,10 @@ $('#quick').addEventListener('click',e=>{const b=e.target.closest('.qb');if(!b)r
 const tfmt=t=>{try{return new Date(t).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',hour12:false})}catch(e){return ''}};
 function renderChat(){
  const box=$('#msgs');const near=box.scrollHeight-box.scrollTop-box.clientHeight<80;
- if(!msgs.length){box.innerHTML=`<p class="empty" id="empty">${chatReady?(role==='p2'?'Nothing here yet. Say hi to Nirvana.':'Nothing here yet. Messages land the moment you both have data.'):(db||!capsDone)?'Loading messages…':STATIC?'Type below and tap WhatsApp. It opens with your message ready to send to Nirvana.':'Chat lights up when you are both signed in to Claude on this page.'}</p>`;return}
+ if(!msgs.length){box.innerHTML=`<p class="empty" id="empty">${chatReady?(role==='p2'?'Nothing here yet. Say hi to Nthabiseng.':'Nothing here yet. Messages land the moment you both have data.'):(db||!capsDone)?'Loading messages…':STATIC?'Type below and tap WhatsApp. It opens with your message ready to send to Nthabiseng.':'Chat lights up when you are both signed in to Claude on this page.'}</p>`;return}
  box.innerHTML=msgs.map(m=>{const who=m.who==='p1'?'p1':'p2',me=who===role,t=tfmt(m.t);
   if(m.kind==='sys')return `<div class="sys">${esc(m.text)}</div>`;
-  const av=`<img class="av" src="${AVURL[who]}" alt="${who==='p1'?'Nirvana':'Khantsu'}">`;
+  const av=`<img class="av" src="${AVURL[who]}" alt="${who==='p1'?'Nthabiseng':'Khantsu'}">`;
   if(m.kind==='heart')return `<div class="m${me?' me':''}">${av}<div class="hb"><img src="${HEARTURL}" alt="A heart">${esc(t)}</div></div>`;
   return `<div class="m${me?' me':''}">${av}<div class="b">${esc(m.text)}<time>${esc(t)}</time></div></div>`}).join('');
  if(near||!renderChat.did){scrollChat();renderChat.did=true}
@@ -750,9 +751,9 @@ function renderStatus(){
 }
 
 /* ---------- garage ---------- */
-function fillGarage(){$('#gWhen').value=cfg.when;[1,2,3].forEach(i=>{$('#g'+i+'t').value=cfg.c[i-1].t;$('#g'+i).value=cfg.c[i-1].x});$('#gL').value=cfg.letter;$('#gS').value=cfg.sign}
+function fillGarage(){$('#gWhen').value=cfg.when;$('#gD').value=cfg.dress;$('#gP').value=cfg.place;[1,2,3].forEach(i=>{$('#g'+i+'t').value=cfg.c[i-1].t;$('#g'+i).value=cfg.c[i-1].x});$('#gL').value=cfg.letter;$('#gS').value=cfg.sign}
 $('#gform').addEventListener('submit',async e=>{e.preventDefault();
- const d={when:$('#gWhen').value||DEF.when,c:[1,2,3].map(i=>({t:$('#g'+i+'t').value.trim()||DEF.c[i-1].t,x:$('#g'+i).value.trim()||DEF.c[i-1].x})),letter:$('#gL').value.trim()||DEF.letter,sign:$('#gS').value.trim()||DEF.sign};
+ const d={when:$('#gWhen').value||DEF.when,dress:$('#gD').value.trim()||DEF.dress,place:$('#gP').value.trim()||DEF.place,c:[1,2,3].map(i=>({t:$('#g'+i+'t').value.trim()||DEF.c[i-1].t,x:$('#g'+i).value.trim()||DEF.c[i-1].x})),letter:$('#gL').value.trim()||DEF.letter,sign:$('#gS').value.trim()||DEF.sign};
  cfg=normCfg(d);renderVault();renderSub();const st=$('#gStat');
  if(!db){st.textContent='Saved on this device only. Open the page signed in to Claude so she sees it.';return}
  st.textContent='Saving…';try{await db.doc('config/reveal').set(cfg);st.textContent='Saved. She will see this.'}catch(err){st.textContent="Couldn't save. Check your data and try again."}});
